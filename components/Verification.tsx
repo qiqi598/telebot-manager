@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Shield, Clock, AlertTriangle, Save } from 'lucide-react';
-import { getVerificationConfig } from '../services/mockService';
+import React from 'react';
+import { Shield, Clock, AlertTriangle } from 'lucide-react';
+import { VerificationConfig } from '../types';
 
-export const Verification: React.FC = () => {
-  const [config, setConfig] = useState(getVerificationConfig());
+interface VerificationProps {
+  config: VerificationConfig;
+  setConfig: (config: VerificationConfig) => void;
+}
 
+export const Verification: React.FC<VerificationProps> = ({ config, setConfig }) => {
   return (
     <div className="p-8 max-w-4xl mx-auto h-full overflow-y-auto">
       <div className="mb-8">
@@ -72,14 +75,6 @@ export const Verification: React.FC = () => {
           />
           <p className="text-xs text-slate-500">可用变量: {'{username}'} (用户名), {'{timeout}'} (超时秒数)</p>
         </div>
-
-        <div className="pt-4 flex justify-end">
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition-colors">
-            <Save size={20} />
-            保存配置
-          </button>
-        </div>
-
       </div>
     </div>
   );
