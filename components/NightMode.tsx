@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Moon, Sun, BellOff, Clock, Save } from 'lucide-react';
+import { Moon, Sun, BellOff, Clock } from 'lucide-react';
 import { getNightModeConfig } from '../services/mockService';
 import { NightModeConfig } from '../types';
 
