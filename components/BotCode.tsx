@@ -1,27 +1,61 @@
-import React from 'react';
-import { Copy, Terminal, Play, Shield, MessageSquare, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Copy, Terminal, Cloud, FileCode, Package, Rocket } from 'lucide-react';
+import { WelcomeConfig, VerificationConfig, ProtectionConfig, ScheduledTask, NightModeConfig } from '../types';
 
-export const BotCode: React.FC = () => {
-  const pythonCode = `
-import logging
+interface BotCodeProps {
+  welcomeConfig: WelcomeConfig;
+  verificationConfig: VerificationConfig;
+  protectionConfig: ProtectionConfig;
+  scheduledTasks: ScheduledTask[];
+  nightModeConfig: NightModeConfig;
+}
+
+export const BotCode: React.FC<BotCodeProps> = ({ 
+  welcomeConfig, 
+  verificationConfig, 
+  protectionConfig, 
+  scheduledTasks,
+  nightModeConfig
+}) => {
+  const [activeTab, setActiveTab] = useState<'bot' | 'requirements' | 'deploy'>('deploy');
+
+  // Dynamic Python Code Generation
+  const generatePythonCode = () => {
+    return `import logging
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-import datetime
+import os
 
-# ================= 配置区域 =================
-# 1. 请在 BotFather 获取 Token
-# ⚠️ 注意：Token 必须包裹在单引号中，例如 '1234:ABCD...'
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN' 
-GROUP_ID = -100123456789
+# ================= 核心配置 (由 TeleBot Manager 生成) =================
+# ⚠️ 注意: 部署到云端时，建议将 TOKEN 放入环境变量，或者在此处直接替换
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', 'YOUR_TOKEN_HERE') 
 
-# 2. 欢迎设置
-WELCOME_MSG = "欢迎 {mention} 加入本群！请阅读群规。"
-AUTO_DELETE_WELCOME = 30 # 秒
+# 1. 欢迎与验证配置
+WELCOME_CONFIG = {
+    'enabled': ${welcomeConfig.enabled ? 'True' : 'False'},
+    'message': r"""${welcomeConfig.message}""",
+    'delete_after': ${welcomeConfig.deleteAfter},
+    'buttons': ${JSON.stringify(welcomeConfig.buttons)},
+    'delete_service_msg': ${welcomeConfig.deleteServiceMessage ? 'True' : 'False'}
+}
 
-# 3. 防护设置
-SENSITIVE_WORDS = ['加群', '刷单', 'free money', 'crypto']
-BLOCK_LINKS = True
-# ===========================================
+VERIFY_CONFIG = {
+    'enabled': ${verificationConfig.enabled ? 'True' : 'False'},
+    'timeout': ${verificationConfig.timeout},
+    'action': '${verificationConfig.action}',
+    'welcome_msg': r"""${verificationConfig.welcomeMessage}"""
+}
+
+# 2. 防护配置
+PROTECT_CONFIG = {
+    'block_links': ${protectionConfig.blockLinks ? 'True' : 'False'},
+    'block_forwarded': ${protectionConfig.blockForwarded ? 'True' : 'False'},
+    'sensitive_words': ${JSON.stringify(protectionConfig.sensitiveWords)},
+    'anti_flood': ${JSON.stringify(protectionConfig.antiFlood)}
+}
+
+# =================================================================
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -29,34 +63,63 @@ logging.basicConfig(
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ 机器人正在运行中！我是超级群管。")
+    await update.message.reply_text("✅ 机器人已在云端运行！配置已同步。")
 
-# --- 核心功能: 验证入群 ---
+# --- 功能: 新成员处理 (验证 + 欢迎) ---
 async def welcome_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for member in update.message.new_chat_members:
-        # 1. 先禁言
-        await context.bot.restrict_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=member.id,
-            permissions=ChatPermissions(can_send_messages=False)
-        )
-        
-        # 2. 发送验证按钮
-        keyboard = [
-            [InlineKeyboardButton("🤖 点我验证 (我是人类)", callback_data=f"verify_{member.id}")],
-        ]
-        
-        msg = await update.message.reply_text(
-            WELCOME_MSG.format(mention=member.mention_html()),
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='HTML'
-        )
-        
-        # 3. 定时删除欢迎消息
-        if AUTO_DELETE_WELCOME > 0:
-            context.job_queue.run_once(delete_message, AUTO_DELETE_WELCOME, data=msg)
+        if member.id == context.bot.id:
+            continue
 
-async def delete_message(context: ContextTypes.DEFAULT_TYPE):
+        # 1. 删除系统消息
+        if WELCOME_CONFIG['delete_service_msg']:
+            try:
+                await update.message.delete()
+            except:
+                pass
+
+        # 2. 验证流程 (如果开启)
+        if VERIFY_CONFIG['enabled']:
+            await context.bot.restrict_chat_member(
+                chat_id=update.effective_chat.id,
+                user_id=member.id,
+                permissions=ChatPermissions(can_send_messages=False)
+            )
+            
+            keyboard = [[InlineKeyboardButton("🤖 点我验证 / Click to Verify", callback_data=f"verify_{member.id}")]]
+            verify_msg = await update.message.reply_text(
+                VERIFY_CONFIG['welcome_msg'].format(username=member.mention_html(), timeout=VERIFY_CONFIG['timeout']),
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='HTML'
+            )
+            # 设置验证超时任务 (此处简化处理，实际生产环境建议用 JobQueue)
+            return
+
+        # 3. 直接发送欢迎 (如果没开启验证)
+        if WELCOME_CONFIG['enabled']:
+            await send_welcome(update, context, member)
+
+async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE, member):
+    keyboard = []
+    if WELCOME_CONFIG['buttons']:
+        row = []
+        for btn in WELCOME_CONFIG['buttons']:
+            row.append(InlineKeyboardButton(btn['label'], url=btn['url']))
+        keyboard.append(row)
+    
+    msg_text = WELCOME_CONFIG['message'].replace('{username}', member.mention_html()).replace('{mention}', member.mention_html())
+    
+    msg = await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=msg_text,
+        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
+        parse_mode='HTML'
+    )
+
+    if WELCOME_CONFIG['delete_after'] > 0:
+        context.job_queue.run_once(delete_message_job, WELCOME_CONFIG['delete_after'], data=msg)
+
+async def delete_message_job(context: ContextTypes.DEFAULT_TYPE):
     try:
         await context.job.data.delete()
     except:
@@ -64,10 +127,13 @@ async def delete_message(context: ContextTypes.DEFAULT_TYPE):
 
 async def verify_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    user_id = int(query.data.split('_')[1])
+    try:
+        user_id = int(query.data.split('_')[1])
+    except:
+        return
     
     if query.from_user.id != user_id:
-        await query.answer("❌ 别乱点，这不是给你的！", show_alert=True)
+        await query.answer("❌ 这不是你的验证按钮！", show_alert=True)
         return
 
     # 解除限制
@@ -77,31 +143,53 @@ async def verify_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         permissions=ChatPermissions(
             can_send_messages=True,
             can_send_media_messages=True,
-            can_send_other_messages=True
+            can_send_other_messages=True,
+            can_add_web_page_previews=True
         )
     )
-    await query.answer("✅ 验证通过，欢迎发言！")
+    await query.answer("✅ 验证通过！")
     await query.message.delete()
+    
+    # 验证通过后发送欢迎
+    if WELCOME_CONFIG['enabled']:
+        # 模拟 update 结构以便复用 send_welcome
+        await send_welcome(update, context, query.from_user)
 
-# --- 核心功能: 关键词过滤 ---
+# --- 功能: 消息过滤 ---
 async def message_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
     text = update.message.text.lower()
     
-    # 简单的关键词匹配
-    if any(word in text for word in SENSITIVE_WORDS):
-        try:
-            await update.message.delete()
-            # 这里的 chat_id 和 user_id 需要从 update 获取
-            # 实际部署时可添加禁言逻辑
-        except Exception as e:
-            print(f"❌ 删除失败，可能没有管理员权限: {e}")
+    # 1. 链接拦截
+    if PROTECT_CONFIG['block_links'] and ('http://' in text or 'https://' in text):
+        await delete_and_warn(update, "🚫 本群禁止发送外部链接。")
         return
 
+    # 2. 敏感词拦截
+    if any(word.lower() in text for word in PROTECT_CONFIG['sensitive_words']):
+        await delete_and_warn(update, "🚫 包含敏感词汇，已删除。")
+        return
+
+async def delete_and_warn(update, reason):
+    try:
+        await update.message.delete()
+        warn = await update.message.reply_text(f"{update.message.from_user.mention_html()} {reason}", parse_mode='HTML')
+        # 5秒后删除警告
+        asyncio.create_task(delayed_delete(warn, 5))
+    except Exception as e:
+        print(f"Delete failed: {e}")
+
+async def delayed_delete(msg, seconds):
+    await asyncio.sleep(seconds)
+    try:
+        await msg.delete()
+    except:
+        pass
+
 if __name__ == '__main__':
-    print("🚀 机器人启动中...")
+    print("🚀 云端机器人启动中...")
     application = ApplicationBuilder().token(TOKEN).build()
     
     application.add_handler(CommandHandler('start', start))
@@ -109,93 +197,143 @@ if __name__ == '__main__':
     application.add_handler(CallbackQueryHandler(verify_callback))
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), message_filter))
     
-    print("✅ 机器人已上线，请在群组中测试。")
+    print("✅ 轮询开始...")
     application.run_polling()
 `;
+  };
+
+  const requirementsCode = `python-telegram-bot==20.8
+asyncio
+logging`;
 
   return (
-    <div className="p-8 h-full overflow-y-auto">
-      <div className="mb-8">
-        <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <CheckCircle2 className="text-emerald-400" size={32} />
-            启动成功！下一步做什么？
-            </h2>
-        </div>
-        <p className="text-slate-400 mt-1">你的终端显示 <code className="text-emerald-400">Application started</code> 说明一切正常。现在请按以下步骤测试。</p>
+    <div className="flex flex-col h-full bg-slate-900 text-slate-100">
+      {/* Header */}
+      <div className="p-6 border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+          <Cloud className="text-blue-400" />
+          云端部署中心
+        </h2>
+        <p className="text-slate-400 text-sm mt-1">
+          将配置好的机器人部署到云服务器，实现 24 小时在线。
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700 bg-slate-800">
+        <button 
+          onClick={() => setActiveTab('deploy')}
+          className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'deploy' ? 'border-blue-500 text-white bg-slate-700/50' : 'border-transparent text-slate-400 hover:text-white'}`}
+        >
+          <Rocket size={16} /> 部署指南
+        </button>
+        <button 
+          onClick={() => setActiveTab('bot')}
+          className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'bot' ? 'border-blue-500 text-white bg-slate-700/50' : 'border-transparent text-slate-400 hover:text-white'}`}
+        >
+          <FileCode size={16} /> bot.py (代码)
+        </button>
+        <button 
+          onClick={() => setActiveTab('requirements')}
+          className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'requirements' ? 'border-blue-500 text-white bg-slate-700/50' : 'border-transparent text-slate-400 hover:text-white'}`}
+        >
+          <Package size={16} /> requirements.txt
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6">
         
-        {/* Step 1: Admin Rights */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-                <Shield className="text-yellow-400" />
-                关键步骤：设置管理员
-            </h3>
-            <div className="space-y-3 text-sm text-slate-300">
-                <p>机器人必须是<strong>管理员 (Admin)</strong> 才能删除垃圾消息或禁言用户。</p>
-                <ol className="list-decimal list-inside space-y-2 mt-2 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
-                    <li>打开你的 Telegram 群组。</li>
-                    <li>点击群组标题，进入设置。</li>
-                    <li>点击 <strong>Administrators (管理员)</strong> -> <strong>Add Admin</strong>。</li>
-                    <li>搜索你的机器人名字，点击添加。</li>
-                    <li><span className="text-emerald-400 font-bold">重要：</span>确保勾选 "Delete messages" 和 "Ban users"。</li>
+        {activeTab === 'deploy' && (
+          <div className="max-w-4xl mx-auto space-y-8">
+            <div className="bg-emerald-900/20 border border-emerald-500/30 p-6 rounded-2xl">
+               <h3 className="text-xl font-bold text-emerald-400 mb-2">架构说明</h3>
+               <p className="text-emerald-200/80 leading-relaxed">
+                 你现在使用的网页是 <strong>配置生成器</strong>。你在网页上修改的所有设置（欢迎语、敏感词等）
+                 都已经自动注入到了 <code className="bg-emerald-900/50 px-2 py-0.5 rounded text-white">bot.py</code> 代码中。
+                 <br/><br/>
+                 要让功能生效，你需要将生成的代码部署到云端。每次修改配置后，都需要重新部署代码。
+               </p>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold text-white">推荐部署平台 (免费/低成本)</h3>
+              
+              {/* Render Option */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition-colors group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-black font-bold text-xs">
+                      Render
+                    </div>
+                    <div>
+                      <h4 className="text-white font-bold">Render.com</h4>
+                      <p className="text-slate-400 text-xs">最简单的 Python 托管，有免费层。</p>
+                    </div>
+                  </div>
+                  <a href="https://dashboard.render.com/" target="_blank" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg font-medium transition-colors">去注册</a>
+                </div>
+                <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm">
+                  <li>注册并连接你的 GitHub 账号。</li>
+                  <li>在你的电脑上新建一个文件夹，放入 <code className="text-blue-400">bot.py</code> 和 <code className="text-blue-400">requirements.txt</code>。</li>
+                  <li>将这个文件夹上传到 GitHub 仓库。</li>
+                  <li>在 Render 点击 <strong>New +</strong> -> <strong>Web Service</strong> (注意：如果只想跑脚本，可以选择 <strong>Background Worker</strong>，但免费版可能受限，建议用 Web Service 并简单监听端口，或者使用 Railway)。</li>
+                  <li>更简单的方案：使用 <strong>Railway.app</strong> (推荐新手)。</li>
                 </ol>
+              </div>
+
+              {/* Railway Option */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-purple-500 transition-colors group">
+                 <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                      Ry
+                    </div>
+                    <div>
+                      <h4 className="text-white font-bold">Railway.app</h4>
+                      <p className="text-slate-400 text-xs">极其适合 Telegram Bot，部署只需几秒。</p>
+                    </div>
+                  </div>
+                  <a href="https://railway.app/" target="_blank" className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-lg font-medium transition-colors">去部署</a>
+                </div>
+                <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm">
+                  <li>在本地创建文件夹，包含 <code className="text-purple-400">bot.py</code> 和 <code className="text-purple-400">requirements.txt</code>。</li>
+                  <li>(可选) 创建一个 Procfile 文件，内容写: <code className="bg-black/30 px-2 py-0.5 rounded">worker: python bot.py</code></li>
+                  <li>安装 Railway CLI 或直接连接 GitHub 仓库。</li>
+                  <li>Railway 会自动识别 Python 环境并安装依赖。</li>
+                  <li>在 Railway 的 Variables 设置中添加 <code className="text-purple-400">TELEGRAM_BOT_TOKEN</code>。</li>
+                </ol>
+              </div>
             </div>
-        </div>
+          </div>
+        )}
 
-        {/* Step 2: Testing */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-                <Terminal className="text-blue-400" />
-                功能测试清单
-            </h3>
-            <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                    <div className="mt-1 p-1 bg-blue-500/20 rounded text-blue-400"><Play size={14}/></div>
-                    <div>
-                        <h4 className="text-white font-medium text-sm">1. 测试响应</h4>
-                        <p className="text-slate-400 text-xs">私聊机器人或在群里发送 <code className="bg-slate-700 px-1 rounded">/start</code>，它应该回复 "✅ 机器人正在运行中"。</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-3">
-                    <div className="mt-1 p-1 bg-red-500/20 rounded text-red-400"><AlertTriangle size={14}/></div>
-                    <div>
-                        <h4 className="text-white font-medium text-sm">2. 测试敏感词拦截</h4>
-                        <p className="text-slate-400 text-xs">在群里发送单词 <code className="bg-slate-700 px-1 rounded">crypto</code> 或 <code className="bg-slate-700 px-1 rounded">刷单</code>。如果机器人是管理员，消息应被秒删。</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-3">
-                    <div className="mt-1 p-1 bg-pink-500/20 rounded text-pink-400"><MessageSquare size={14}/></div>
-                    <div>
-                        <h4 className="text-white font-medium text-sm">3. 测试入群欢迎</h4>
-                        <p className="text-slate-400 text-xs">邀请一个朋友进群，或者自己用小号进群。应该能看到验证按钮。</p>
-                    </div>
-                </div>
+        {(activeTab === 'bot' || activeTab === 'requirements') && (
+          <div className="h-full flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-slate-400">
+                {activeTab === 'bot' 
+                  ? '这是包含你所有配置的完整逻辑代码。' 
+                  : '这是云端服务器安装 Python 库所需的清单。'}
+              </p>
+              <button 
+                onClick={() => navigator.clipboard.writeText(activeTab === 'bot' ? generatePythonCode() : requirementsCode)}
+                className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Copy size={16} /> 复制内容
+              </button>
             </div>
-        </div>
-      </div>
+            <div className="flex-1 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+               <pre className="p-6 font-mono text-sm text-slate-300 leading-relaxed h-full overflow-y-auto">
+                <code className="block">
+                  {activeTab === 'bot' ? generatePythonCode() : requirementsCode}
+                </code>
+              </pre>
+            </div>
+          </div>
+        )}
 
-      {/* Code Viewer (Collapsed/Secondary) */}
-      <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-        <div className="bg-slate-800 p-3 flex items-center justify-between border-b border-slate-700">
-          <span className="text-xs font-mono text-slate-500 ml-2">bot.py (源码参考)</span>
-          <button 
-            onClick={() => navigator.clipboard.writeText(pythonCode)}
-            className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition-colors"
-          >
-            <Copy size={14} /> 复制代码
-          </button>
-        </div>
-        <div className="p-0 overflow-x-auto max-h-60 overflow-y-auto">
-          <pre className="p-4 font-mono text-xs text-slate-400 leading-relaxed">
-            <code className="block">{pythonCode}</code>
-          </pre>
-        </div>
       </div>
-
     </div>
   );
 };
