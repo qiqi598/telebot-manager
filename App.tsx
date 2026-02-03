@@ -8,21 +8,43 @@ import { NightMode } from './components/NightMode';
 import { Scheduled } from './components/Scheduled';
 import { Media } from './components/Media';
 import { BotCode } from './components/BotCode';
-import { AppTab } from './types';
+import { AppTab, WelcomeConfig, VerificationConfig, ProtectionConfig, ScheduledTask, NightModeConfig } from './types';
+import { getWelcomeConfig, getVerificationConfig, getProtectionConfig, getScheduledTasks, getNightModeConfig } from './services/mockService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
 
+  // Global State (Lifted Up)
+  const [welcomeConfig, setWelcomeConfig] = useState<WelcomeConfig>(getWelcomeConfig());
+  const [verificationConfig, setVerificationConfig] = useState<VerificationConfig>(getVerificationConfig());
+  const [protectionConfig, setProtectionConfig] = useState<ProtectionConfig>(getProtectionConfig());
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>(getScheduledTasks());
+  const [nightModeConfig, setNightModeConfig] = useState<NightModeConfig>(getNightModeConfig());
+
   const renderContent = () => {
     switch (activeTab) {
-      case AppTab.DASHBOARD: return <Dashboard />;
-      case AppTab.WELCOME: return <Welcome />;
-      case AppTab.VERIFICATION: return <Verification />;
-      case AppTab.PROTECTION: return <Protection />;
-      case AppTab.SCHEDULED: return <Scheduled />;
-      case AppTab.NIGHT_MODE: return <NightMode />;
-      case AppTab.MEDIA: return <Media />;
-      case AppTab.CODE: return <BotCode />;
+      case AppTab.DASHBOARD: 
+        return <Dashboard />;
+      case AppTab.WELCOME: 
+        return <Welcome config={welcomeConfig} setConfig={setWelcomeConfig} />;
+      case AppTab.VERIFICATION: 
+        return <Verification config={verificationConfig} setConfig={setVerificationConfig} />;
+      case AppTab.PROTECTION: 
+        return <Protection config={protectionConfig} setConfig={setProtectionConfig} />;
+      case AppTab.SCHEDULED: 
+        return <Scheduled tasks={scheduledTasks} setTasks={setScheduledTasks} />;
+      case AppTab.NIGHT_MODE: 
+        return <NightMode config={nightModeConfig} setConfig={setNightModeConfig} />;
+      case AppTab.MEDIA: 
+        return <Media />;
+      case AppTab.CODE: 
+        return <BotCode 
+          welcomeConfig={welcomeConfig}
+          verificationConfig={verificationConfig}
+          protectionConfig={protectionConfig}
+          scheduledTasks={scheduledTasks}
+          nightModeConfig={nightModeConfig}
+        />;
       default: return <Dashboard />;
     }
   };
