@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Terminal, Play, FileCode, CheckCircle2, Command } from 'lucide-react';
+import { Copy, Terminal, Play, Shield, MessageSquare, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export const BotCode: React.FC = () => {
   const pythonCode = `
@@ -10,6 +10,7 @@ import datetime
 
 # ================= 配置区域 =================
 # 1. 请在 BotFather 获取 Token
+# ⚠️ 注意：Token 必须包裹在单引号中，例如 '1234:ABCD...'
 TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN' 
 GROUP_ID = -100123456789
 
@@ -28,7 +29,7 @@ logging.basicConfig(
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ 机器人正在运行中！")
+    await update.message.reply_text("✅ 机器人正在运行中！我是超级群管。")
 
 # --- 核心功能: 验证入群 ---
 async def welcome_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -91,9 +92,12 @@ async def message_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # 简单的关键词匹配
     if any(word in text for word in SENSITIVE_WORDS):
-        await update.message.delete()
-        # 这里的 chat_id 和 user_id 需要从 update 获取
-        # 实际部署时可添加禁言逻辑
+        try:
+            await update.message.delete()
+            # 这里的 chat_id 和 user_id 需要从 update 获取
+            # 实际部署时可添加禁言逻辑
+        except Exception as e:
+            print(f"❌ 删除失败，可能没有管理员权限: {e}")
         return
 
 if __name__ == '__main__':
@@ -109,95 +113,86 @@ if __name__ == '__main__':
     application.run_polling()
 `;
 
-  const StepCard = ({ number, title, icon: Icon, children }: any) => (
-    <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 flex flex-col gap-3">
-      <div className="flex items-center gap-3 border-b border-slate-700 pb-3">
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-900/50">
-          {number}
-        </div>
-        <h3 className="font-bold text-white flex items-center gap-2">
-          <Icon size={18} className="text-blue-400" />
-          {title}
-        </h3>
-      </div>
-      <div className="text-sm text-slate-300 space-y-2">
-        {children}
-      </div>
-    </div>
-  );
-
   return (
     <div className="p-8 h-full overflow-y-auto">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Terminal className="text-green-400" />
-          部署流程
-        </h2>
-        <p className="text-slate-400 mt-1">恭喜依赖库安装成功！请按顺序执行以下步骤。</p>
+        <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <CheckCircle2 className="text-emerald-400" size={32} />
+            启动成功！下一步做什么？
+            </h2>
+        </div>
+        <p className="text-slate-400 mt-1">你的终端显示 <code className="text-emerald-400">Application started</code> 说明一切正常。现在请按以下步骤测试。</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Step 1 */}
-        <StepCard number="1" title="安装依赖 (已完成)" icon={CheckCircle2}>
-          <p className="opacity-60">你已经成功运行了安装命令。</p>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded text-emerald-400 text-xs">
-            ✨ Successfully installed python-telegram-bot
-          </div>
-        </StepCard>
-
-        {/* Step 2 */}
-        <StepCard number="2" title="创建文件" icon={FileCode}>
-          <p>1. 在你的文件夹中新建一个文件。</p>
-          <p>2. 命名为 <code className="bg-slate-900 px-2 py-1 rounded border border-slate-600 text-white font-mono">bot.py</code></p>
-          <p>3. 将下方的 Python 代码完整复制进去。</p>
-          <p className="text-xs text-orange-400 mt-1">*记得修改代码中的 TOKEN！</p>
-        </StepCard>
-
-        {/* Step 3 */}
-        <StepCard number="3" title="启动机器人" icon={Play}>
-          <p>在终端中运行以下命令：</p>
-          <div className="bg-black/40 p-3 rounded-lg font-mono text-emerald-400 text-sm border border-slate-600 select-all flex justify-between items-center group">
-            <span>python3 bot.py</span>
-            <Copy size={14} className="opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => navigator.clipboard.writeText('python3 bot.py')}/>
-          </div>
-          <p className="text-xs text-slate-500 mt-2">
-            看到 "机器人已上线" 后，去群里发个消息测试一下。
-          </p>
-        </StepCard>
-      </div>
-
-      {/* Code Block */}
-      <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden shadow-2xl">
-        <div className="bg-slate-800 p-4 flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500"/>
-              <div className="w-3 h-3 rounded-full bg-yellow-500"/>
-              <div className="w-3 h-3 rounded-full bg-green-500"/>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        
+        {/* Step 1: Admin Rights */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                <Shield className="text-yellow-400" />
+                关键步骤：设置管理员
+            </h3>
+            <div className="space-y-3 text-sm text-slate-300">
+                <p>机器人必须是<strong>管理员 (Admin)</strong> 才能删除垃圾消息或禁言用户。</p>
+                <ol className="list-decimal list-inside space-y-2 mt-2 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                    <li>打开你的 Telegram 群组。</li>
+                    <li>点击群组标题，进入设置。</li>
+                    <li>点击 <strong>Administrators (管理员)</strong> -> <strong>Add Admin</strong>。</li>
+                    <li>搜索你的机器人名字，点击添加。</li>
+                    <li><span className="text-emerald-400 font-bold">重要：</span>确保勾选 "Delete messages" 和 "Ban users"。</li>
+                </ol>
             </div>
-            <span className="text-xs font-mono text-slate-400">bot.py</span>
-          </div>
+        </div>
+
+        {/* Step 2: Testing */}
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                <Terminal className="text-blue-400" />
+                功能测试清单
+            </h3>
+            <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                    <div className="mt-1 p-1 bg-blue-500/20 rounded text-blue-400"><Play size={14}/></div>
+                    <div>
+                        <h4 className="text-white font-medium text-sm">1. 测试响应</h4>
+                        <p className="text-slate-400 text-xs">私聊机器人或在群里发送 <code className="bg-slate-700 px-1 rounded">/start</code>，它应该回复 "✅ 机器人正在运行中"。</p>
+                    </div>
+                </div>
+                <div className="flex items-start gap-3">
+                    <div className="mt-1 p-1 bg-red-500/20 rounded text-red-400"><AlertTriangle size={14}/></div>
+                    <div>
+                        <h4 className="text-white font-medium text-sm">2. 测试敏感词拦截</h4>
+                        <p className="text-slate-400 text-xs">在群里发送单词 <code className="bg-slate-700 px-1 rounded">crypto</code> 或 <code className="bg-slate-700 px-1 rounded">刷单</code>。如果机器人是管理员，消息应被秒删。</p>
+                    </div>
+                </div>
+                <div className="flex items-start gap-3">
+                    <div className="mt-1 p-1 bg-pink-500/20 rounded text-pink-400"><MessageSquare size={14}/></div>
+                    <div>
+                        <h4 className="text-white font-medium text-sm">3. 测试入群欢迎</h4>
+                        <p className="text-slate-400 text-xs">邀请一个朋友进群，或者自己用小号进群。应该能看到验证按钮。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Code Viewer (Collapsed/Secondary) */}
+      <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-slate-800 p-3 flex items-center justify-between border-b border-slate-700">
+          <span className="text-xs font-mono text-slate-500 ml-2">bot.py (源码参考)</span>
           <button 
             onClick={() => navigator.clipboard.writeText(pythonCode)}
-            className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition-colors shadow-lg shadow-blue-900/20"
+            className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition-colors"
           >
-            <Copy size={16} /> 复制全部代码
+            <Copy size={14} /> 复制代码
           </button>
         </div>
-        <div className="p-0 overflow-x-auto">
-          <pre className="p-6 font-mono text-sm text-slate-300 leading-relaxed bg-[#0d1117]">
+        <div className="p-0 overflow-x-auto max-h-60 overflow-y-auto">
+          <pre className="p-4 font-mono text-xs text-slate-400 leading-relaxed">
             <code className="block">{pythonCode}</code>
           </pre>
-        </div>
-      </div>
-
-      <div className="mt-8 p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
-        <Command className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
-        <div>
-          <h4 className="font-bold text-blue-200 text-sm">如何获取 TOKEN？</h4>
-          <p className="text-sm text-blue-300/80 mt-1">
-            在 Telegram 中搜索 <span className="text-white font-bold">@BotFather</span>，发送 <code className="bg-blue-900/50 px-1 py-0.5 rounded">/newbot</code>，按照提示创建机器人。它会给你一串 HTTP API Token，替换掉代码中的 YOUR_TELEGRAM_BOT_TOKEN 即可。
-          </p>
         </div>
       </div>
 
