@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Link as LinkIcon, MessageSquare, Save, AlertOctagon } from 'lucide-react';
-import { getProtectionConfig } from '../services/mockService';
+import { ShieldAlert, Link as LinkIcon, MessageSquare, AlertOctagon } from 'lucide-react';
 import { ProtectionConfig } from '../types';
 
-export const Protection: React.FC = () => {
-  const [config, setConfig] = useState<ProtectionConfig>(getProtectionConfig());
+interface ProtectionProps {
+  config: ProtectionConfig;
+  setConfig: (config: ProtectionConfig) => void;
+}
+
+export const Protection: React.FC<ProtectionProps> = ({ config, setConfig }) => {
   const [newWord, setNewWord] = useState('');
 
   const addWord = () => {
@@ -143,10 +146,6 @@ export const Protection: React.FC = () => {
                </span>
              ))}
            </div>
-
-           <button className="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
-             <Save size={18} /> 保存防护配置
-           </button>
         </div>
 
       </div>
