@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Shield, Calendar, Image, Terminal, Bot, MessageSquareHeart, ShieldAlert, Moon } from 'lucide-react';
+import { LayoutDashboard, Shield, Calendar, Image, Terminal, Bot, MessageSquare, ShieldAlert, Moon } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Welcome } from './components/Welcome';
 import { Verification } from './components/Verification';
@@ -59,7 +59,7 @@ const App: React.FC = () => {
         <nav className="flex-1 px-4 py-4 overflow-y-auto custom-scrollbar">
           <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 mt-2">基础管理</p>
           <NavItem tab={AppTab.DASHBOARD} icon={LayoutDashboard} label="概览" />
-          <NavItem tab={AppTab.WELCOME} icon={MessageSquareHeart} label="入群欢迎" />
+          <NavItem tab={AppTab.WELCOME} icon={MessageSquare} label="入群欢迎" />
           <NavItem tab={AppTab.VERIFICATION} icon={Shield} label="入群验证" />
           
           <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 mt-6">安全与防护</p>
@@ -79,7 +79,7 @@ const App: React.FC = () => {
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-50 flex justify-around p-2 overflow-x-auto">
         <button onClick={() => setActiveTab(AppTab.DASHBOARD)} className={`p-3 rounded-full flex-shrink-0 ${activeTab === AppTab.DASHBOARD ? 'text-blue-500 bg-blue-500/10' : 'text-slate-500'}`}><LayoutDashboard size={22} /></button>
-        <button onClick={() => setActiveTab(AppTab.WELCOME)} className={`p-3 rounded-full flex-shrink-0 ${activeTab === AppTab.WELCOME ? 'text-pink-500 bg-pink-500/10' : 'text-slate-500'}`}><MessageSquareHeart size={22} /></button>
+        <button onClick={() => setActiveTab(AppTab.WELCOME)} className={`p-3 rounded-full flex-shrink-0 ${activeTab === AppTab.WELCOME ? 'text-pink-500 bg-pink-500/10' : 'text-slate-500'}`}><MessageSquare size={22} /></button>
         <button onClick={() => setActiveTab(AppTab.PROTECTION)} className={`p-3 rounded-full flex-shrink-0 ${activeTab === AppTab.PROTECTION ? 'text-orange-500 bg-orange-500/10' : 'text-slate-500'}`}><ShieldAlert size={22} /></button>
         <button onClick={() => setActiveTab(AppTab.CODE)} className={`p-3 rounded-full flex-shrink-0 ${activeTab === AppTab.CODE ? 'text-green-500 bg-green-500/10' : 'text-slate-500'}`}><Terminal size={22} /></button>
       </div>
