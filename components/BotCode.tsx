@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Terminal, Cloud, FileCode, Package, Rocket } from 'lucide-react';
+import { Copy, Terminal, Cloud, FileCode, Package, Rocket, Download } from 'lucide-react';
 import { WelcomeConfig, VerificationConfig, ProtectionConfig, ScheduledTask, NightModeConfig } from '../types';
 
 interface BotCodeProps {
@@ -206,6 +206,18 @@ if __name__ == '__main__':
 asyncio
 logging`;
 
+  const downloadFile = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-900 text-slate-100">
       {/* Header */}
@@ -259,29 +271,6 @@ logging`;
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-white">推荐部署平台 (免费/低成本)</h3>
               
-              {/* Render Option */}
-              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition-colors group">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-black font-bold text-xs">
-                      Render
-                    </div>
-                    <div>
-                      <h4 className="text-white font-bold">Render.com</h4>
-                      <p className="text-slate-400 text-xs">最简单的 Python 托管，有免费层。</p>
-                    </div>
-                  </div>
-                  <a href="https://dashboard.render.com/" target="_blank" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg font-medium transition-colors">去注册</a>
-                </div>
-                <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm">
-                  <li>注册并连接你的 GitHub 账号。</li>
-                  <li>在你的电脑上新建一个文件夹，放入 <code className="text-blue-400">bot.py</code> 和 <code className="text-blue-400">requirements.txt</code>。</li>
-                  <li>将这个文件夹上传到 GitHub 仓库。</li>
-                  <li>在 Render 点击 <strong>New +</strong> -> <strong>Web Service</strong> (注意：如果只想跑脚本，可以选择 <strong>Background Worker</strong>，但免费版可能受限，建议用 Web Service 并简单监听端口，或者使用 Railway)。</li>
-                  <li>更简单的方案：使用 <strong>Railway.app</strong> (推荐新手)。</li>
-                </ol>
-              </div>
-
               {/* Railway Option */}
               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-purple-500 transition-colors group">
                  <div className="flex items-center justify-between mb-4">
@@ -290,19 +279,48 @@ logging`;
                       Ry
                     </div>
                     <div>
-                      <h4 className="text-white font-bold">Railway.app</h4>
+                      <h4 className="text-white font-bold">Railway.app (推荐)</h4>
                       <p className="text-slate-400 text-xs">极其适合 Telegram Bot，部署只需几秒。</p>
                     </div>
                   </div>
                   <a href="https://railway.app/" target="_blank" className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-lg font-medium transition-colors">去部署</a>
                 </div>
                 <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm">
-                  <li>在本地创建文件夹，包含 <code className="text-purple-400">bot.py</code> 和 <code className="text-purple-400">requirements.txt</code>。</li>
-                  <li>(可选) 创建一个 Procfile 文件，内容写: <code className="bg-black/30 px-2 py-0.5 rounded">worker: python bot.py</code></li>
-                  <li>安装 Railway CLI 或直接连接 GitHub 仓库。</li>
-                  <li>Railway 会自动识别 Python 环境并安装依赖。</li>
-                  <li>在 Railway 的 Variables 设置中添加 <code className="text-purple-400">TELEGRAM_BOT_TOKEN</code>。</li>
+                  <li>
+                    点击上方标签页，下载 <code className="text-purple-400 bg-purple-400/10 px-1 rounded">bot.py</code> 和 <code className="text-purple-400 bg-purple-400/10 px-1 rounded">requirements.txt</code>。
+                  </li>
+                  <li>
+                    将这两个文件放入一个新建文件夹，并上传到你的 <strong>GitHub</strong> 仓库。
+                  </li>
+                  <li>
+                    在 Railway 中点击 <strong>New Project</strong> -> <strong>Deploy from GitHub repo</strong>。
+                  </li>
+                  <li>
+                    Railway 会自动识别 Python 环境并安装依赖。
+                  </li>
+                  <li>
+                    <strong>关键一步：</strong> 在 Railway 的 Variables (变量) 设置中添加：
+                    <br/>
+                    <code className="bg-black/30 px-2 py-1 rounded mt-1 block w-max">TELEGRAM_BOT_TOKEN = 你的Token</code>
+                  </li>
                 </ol>
+              </div>
+
+               {/* Render Option */}
+               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-blue-500 transition-colors group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-black font-bold text-xs">
+                      Render
+                    </div>
+                    <div>
+                      <h4 className="text-white font-bold">Render.com</h4>
+                      <p className="text-slate-400 text-xs">有免费层，适合轻量级应用。</p>
+                    </div>
+                  </div>
+                  <a href="https://dashboard.render.com/" target="_blank" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg font-medium transition-colors">去注册</a>
+                </div>
+                <p className="text-slate-400 text-sm mb-2">步骤与 Railway 类似。记得在 Environment 选项卡中添加 TOKEN。</p>
               </div>
             </div>
           </div>
@@ -316,12 +334,20 @@ logging`;
                   ? '这是包含你所有配置的完整逻辑代码。' 
                   : '这是云端服务器安装 Python 库所需的清单。'}
               </p>
-              <button 
-                onClick={() => navigator.clipboard.writeText(activeTab === 'bot' ? generatePythonCode() : requirementsCode)}
-                className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Copy size={16} /> 复制内容
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => downloadFile(activeTab === 'bot' ? 'bot.py' : 'requirements.txt', activeTab === 'bot' ? generatePythonCode() : requirementsCode)}
+                  className="flex items-center gap-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg transition-colors shadow-lg shadow-emerald-900/20"
+                >
+                  <Download size={16} /> 下载文件
+                </button>
+                <button 
+                  onClick={() => navigator.clipboard.writeText(activeTab === 'bot' ? generatePythonCode() : requirementsCode)}
+                  className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Copy size={16} /> 复制内容
+                </button>
+              </div>
             </div>
             <div className="flex-1 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
                <pre className="p-6 font-mono text-sm text-slate-300 leading-relaxed h-full overflow-y-auto">
