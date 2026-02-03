@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Moon, Sun, BellOff, Clock } from 'lucide-react';
-import { getNightModeConfig } from '../services/mockService';
 import { NightModeConfig } from '../types';
 
-export const NightMode: React.FC = () => {
-  const [config, setConfig] = useState<NightModeConfig>(getNightModeConfig());
+interface NightModeProps {
+  config: NightModeConfig;
+  setConfig: (config: NightModeConfig) => void;
+}
 
+export const NightMode: React.FC<NightModeProps> = ({ config, setConfig }) => {
   return (
     <div className="p-8 max-w-2xl mx-auto h-full overflow-y-auto flex flex-col justify-center">
       <div className="text-center mb-10">
@@ -86,10 +88,6 @@ export const NightMode: React.FC = () => {
                 </button>
              </div>
           </div>
-
-          <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/40 transition-all">
-             保存设置
-          </button>
         </div>
       </div>
     </div>
