@@ -1,0 +1,5 @@
+{
+  "name": "TeleBot Manager",
+  "description": "Admin dashboard for Telegram Group Management Bot with verification, scheduling, and media broadcast tools.",
+  "requestFramePermissions": []
+}
