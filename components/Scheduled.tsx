@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Calendar, Plus, Trash2, Edit2, Clock } from 'lucide-react';
-import { getScheduledTasks } from '../services/mockService';
 import { ScheduledTask } from '../types';
 
-export const Scheduled: React.FC = () => {
-  const [tasks, setTasks] = useState<ScheduledTask[]>(getScheduledTasks());
+interface ScheduledProps {
+  tasks: ScheduledTask[];
+  setTasks: (tasks: ScheduledTask[]) => void;
+}
+
+export const Scheduled: React.FC<ScheduledProps> = ({ tasks, setTasks }) => {
 
   const toggleTask = (id: string) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, active: !t.active } : t));
