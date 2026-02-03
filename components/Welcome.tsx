@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquareHeart, Clock, Link, Trash2, Plus, Save } from 'lucide-react';
+import { MessageSquare, Clock, Link, Trash2, Plus, Save } from 'lucide-react';
 import { getWelcomeConfig } from '../services/mockService';
 import { WelcomeConfig } from '../types';
 
@@ -26,7 +26,7 @@ export const Welcome: React.FC = () => {
     <div className="p-8 max-w-4xl mx-auto h-full overflow-y-auto">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-          <MessageSquareHeart className="text-pink-400" />
+          <MessageSquare className="text-pink-400" />
           入群欢迎设置
         </h2>
         <p className="text-slate-400 mt-1">自定义新成员加入时发送的欢迎信息和按钮。</p>
