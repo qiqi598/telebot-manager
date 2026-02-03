@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { MessageSquare, Clock, Link, Trash2, Plus, Save } from 'lucide-react';
-import { getWelcomeConfig } from '../services/mockService';
 import { WelcomeConfig } from '../types';
 
-export const Welcome: React.FC = () => {
-  const [config, setConfig] = useState<WelcomeConfig>(getWelcomeConfig());
+interface WelcomeProps {
+  config: WelcomeConfig;
+  setConfig: (config: WelcomeConfig) => void;
+}
 
+export const Welcome: React.FC<WelcomeProps> = ({ config, setConfig }) => {
   const addButton = () => {
     setConfig({ ...config, buttons: [...config.buttons, { label: '新按钮', url: 'https://' }] });
   };
@@ -57,7 +59,7 @@ export const Welcome: React.FC = () => {
             rows={5}
             className="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-pink-500 outline-none resize-none"
           />
-          <p className="text-xs text-slate-500">支持 HTML/Markdown。变量: {'{username}'}, {'{fullname}'}, {'{userid}'}</p>
+          <p className="text-xs text-slate-500">支持 HTML/Markdown。变量: {'{mention}'} (提及用户), {'{username}'}, {'{id}'}</p>
         </div>
 
         {/* Buttons */}
@@ -123,14 +125,6 @@ export const Welcome: React.FC = () => {
              />
            </div>
         </div>
-
-        <div className="pt-4 flex justify-end">
-          <button className="flex items-center gap-2 bg-pink-600 hover:bg-pink-500 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-pink-900/20">
-            <Save size={20} />
-            保存欢迎设置
-          </button>
-        </div>
-
       </div>
     </div>
   );
